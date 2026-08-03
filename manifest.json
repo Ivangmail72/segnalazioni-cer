@@ -1,0 +1,26 @@
+{
+  "name": "Segnalazione anomalie — Gruppo CER",
+  "short_name": "Segnalazioni CER",
+  "description": "Modulo di segnalazione anomalie di sicurezza e logistica. Genera un PDF da inviare via WhatsApp agli uffici competenti.",
+  "lang": "it",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f8f7",
+  "theme_color": "#1D9E75",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

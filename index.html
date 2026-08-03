@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1D9E75" />
+  <title>Segnalazione anomalie — Gruppo CER</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Segnalazioni CER" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; background: #f6f8f7; }
+    #root { min-height: 100vh; }
+    .app-loading { display:flex; align-items:center; justify-content:center; min-height:100vh; font-family:'Inter',system-ui,sans-serif; color:#7d8a83; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div id="root"><div class="app-loading">Caricamento…</div></div>
+  <script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+// Icone SVG inline (stile lucide) — nessuna dipendenza esterna
+function Svg({ size = 24, color = "currentColor", children, ...rest }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size}
+      viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" {...rest}>
+      {children}
+    </svg>
+  );
+}
+const ShieldAlert = (p) => <Svg {...p}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></Svg>;
+const Wrench = (p) => <Svg {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></Svg>;
+const ChevronRight = (p) => <Svg {...p}><path d="m9 18 6-6-6-6"/></Svg>;
+const ChevronLeft = (p) => <Svg {...p}><path d="m15 18-6-6 6-6"/></Svg>;
+const Check = (p) => <Svg {...p}><path d="M20 6 9 17l-5-5"/></Svg>;
+const Camera = (p) => <Svg {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></Svg>;
+const MapPin = (p) => <Svg {...p}><path d="M20 10c0 4.4-5.5 9.5-7.3 11a1 1 0 0 1-1.4 0C9.5 19.5 4 14.4 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></Svg>;
+const X = (p) => <Svg {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Svg>;
+const Share2 = (p) => <Svg {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></Svg>;
+const Download = (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></Svg>;
+const WifiOff = (p) => <Svg {...p}><path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/><line x1="2" x2="22" y1="2" y2="22"/></Svg>;
+const ArrowLeft = (p) => <Svg {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Svg>;
+const FileText = (p) => <Svg {...p}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></Svg>;
+// ─────────────────────────────────────────────────────────────
+
+const BRAND = "#1D9E75";
+const BRAND_DARK = "#157a5a";
+const INK = "#0f1c17";
+
+const CATEGORIES = [
+  {
+    id: "sicurezza",
+    label: "Sicurezza",
+    desc: "Near miss, pericolo, condizione non sicura",
+    icon: ShieldAlert,
+    tint: "#e8f5ef",
+    accent: "#1D9E75",
+    office: "RSPP / Sicurezza",
+    types: [
+      "Near miss (mancato infortunio)",
+      "Condizione pericolosa (ambiente)",
+      "Comportamento pericoloso",
+      "DPI mancante o danneggiato",
+      "Sversamento / perdita gas",
+      "Altro rischio sicurezza",
+    ],
+  },
+  {
+    id: "logistica",
+    label: "Guasto / Logistica",
+    desc: "Mezzi, attrezzature, consegne, bombole",
+    icon: Wrench,
+    tint: "#fdf1e7",
+    accent: "#d9782d",
+    office: "Ufficio Logistica / Tecnico",
+    types: [
+      "Guasto mezzo / attrezzatura",
+      "Problema consegna / ritiro",
+      "Bombole (giacenza, danni, scambio)",
+      "Manutenzione necessaria",
+      "Materiale mancante",
+      "Altro logistica",
+    ],
+  },
+];
+
+const URGENCY = [
+  { id: "bassa", label: "Bassa", hint: "Da valutare, non urgente", color: "#5b8def" },
+  { id: "media", label: "Media", hint: "Da gestire a breve", color: "#e0a800" },
+  { id: "alta", label: "Alta", hint: "Intervento rapido", color: "#e0533d" },
+];
+
+const STEPS = ["Categoria", "Dettagli", "Foto e luogo", "Chi segnala", "Invio"];
+
+function fmtDate(d) {
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  }).format(d);
+}
+
+function newProtocol() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const seq = Math.floor(1000 + Math.random() * 8999);
+  return `SG-${y}-${seq}`;
+}
+
+// carica jsPDF da CDN una sola volta
+let jsPdfPromise = null;
+function loadJsPDF() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (!jsPdfPromise) {
+    jsPdfPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      s.onload = () => resolve(window.jspdf.jsPDF);
+      s.onerror = () => reject(new Error("Impossibile caricare il generatore PDF"));
+      document.head.appendChild(s);
+    });
+  }
+  return jsPdfPromise;
+}
+
+// costruisce il PDF della segnalazione e ritorna un Blob
+async function buildPdf(data, protocol) {
+  const jsPDF = await loadJsPDF();
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210;
+  const M = 16;
+  const cat = CATEGORIES.find((c) => c.id === data.category);
+  const urg = URGENCY.find((u) => u.id === data.urgency);
+  const green = [29, 158, 117];
+  const ink = [15, 28, 23];
+  const grey = [120, 130, 125];
+
+  // intestazione
+  doc.setFillColor(...green);
+  doc.rect(0, 0, W, 30, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.text("Breathing Safety", M, 15);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Segnalazione dal campo", M, 22);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text(protocol, W - M, 15, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(fmtDate(new Date()), W - M, 21, { align: "right" });
+
+  let y = 42;
+
+  // riga categoria / urgenza
+  doc.setFontSize(11);
+  doc.setTextColor(...ink);
+  doc.setFont("helvetica", "bold");
+  doc.text(`${cat?.label || "-"}`, M, y);
+  doc.setTextColor(...grey);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Instradamento: ${cat?.office || "-"}`, M, y + 6);
+  doc.setFont("helvetica", "bold");
+  const uc = urg?.id === "alta" ? [224, 83, 61] : urg?.id === "media" ? [200, 150, 0] : [91, 141, 239];
+  doc.setTextColor(...uc);
+  doc.text(`Urgenza: ${urg?.label || "-"}`, W - M, y, { align: "right" });
+  y += 14;
+
+  // funzione riga chiave/valore con wrapping
+  const field = (label, value) => {
+    doc.setDrawColor(235, 239, 237);
+    doc.line(M, y - 4, W - M, y - 4);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...grey);
+    doc.text(label.toUpperCase(), M, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(...ink);
+    const lines = doc.splitTextToSize(value || "—", W - 2 * M);
+    doc.text(lines, M, y + 6);
+    y += 6 + lines.length * 5.5 + 5;
+  };
+
+  field("Tipo", data.type);
+  field("Descrizione", data.description);
+  field("Sito / cantiere", data.site);
+  field("Posizione GPS", data.location ? `${data.location.lat}, ${data.location.lng}` : null);
+  field("Segnalante", `${data.reporterName}  ·  ${data.reporterCompany}${data.reporterPhone ? "  ·  " + data.reporterPhone : ""}`);
+
+  // foto
+  if (data.photo?.dataUrl) {
+    doc.setDrawColor(235, 239, 237);
+    doc.line(M, y - 4, W - M, y - 4);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...grey);
+    doc.text("FOTO", M, y);
+    y += 4;
+    try {
+      const dims = imgFit(data.photo.w, data.photo.h, W - 2 * M, 90);
+      if (y + dims.h > 285) { doc.addPage(); y = 20; }
+      doc.addImage(data.photo.dataUrl, "JPEG", M, y, dims.w, dims.h);
+      y += dims.h + 6;
+    } catch (e) { /* foto non incorporabile, si prosegue */ }
+  }
+
+  // piè di pagina
+  doc.setFontSize(8);
+  doc.setTextColor(...grey);
+  doc.text(
+    "Documento generato dall'app segnalazioni. Dati trattati ai sensi del Reg. UE 2016/679.",
+    M, 290
+  );
+
+  return doc.output("blob");
+}
+
+function imgFit(w, h, maxW, maxH) {
+  if (!w || !h) return { w: maxW, h: maxH };
+  const r = Math.min(maxW / w, maxH / h);
+  return { w: w * r, h: h * r };
+}
+
+function App() {
+  const [online, setOnline] = useState(true);
+  const [screen, setScreen] = useState("intro"); // intro | form | done
+  const [result, setResult] = useState(null); // { protocol, blob, filename }
+  const [busy, setBusy] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
+
+  // stato del form
+  const [step, setStep] = useState(0);
+  const [data, setData] = useState({
+    category: null,
+    type: "",
+    urgency: "media",
+    description: "",
+    photo: null,
+    location: null,
+    site: "",
+    reporterName: "",
+    reporterCompany: "",
+    reporterPhone: "",
+  });
+
+  const set = (k, v) => setData((d) => ({ ...d, [k]: v }));
+
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    setOnline(navigator.onLine);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  const resetForm = () => {
+    setStep(0);
+    setData({
+      category: null, type: "", urgency: "media", description: "",
+      photo: null, location: null, site: "",
+      reporterName: "", reporterCompany: "", reporterPhone: "",
+    });
+  };
+
+  // genera il PDF della segnalazione sul dispositivo
+  const generate = async () => {
+    setBusy(true);
+    setPdfError(null);
+    try {
+      const protocol = newProtocol();
+      const blob = await buildPdf(data, protocol);
+      const filename = `Segnalazione_${protocol}.pdf`;
+      setResult({ protocol, blob, filename });
+      setScreen("done");
+    } catch (e) {
+      setPdfError(e.message || "Errore nella generazione del PDF");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={styles.viewport}>
+      <style>{globalCss}</style>
+
+      {!online && (
+        <div style={styles.offlineBar}>
+          <WifiOff size={15} />
+          <span>Offline — la segnalazione verrà inviata al ritorno della rete</span>
+        </div>
+      )}
+
+      <header style={styles.header}>
+        <div style={styles.brandRow}>
+          <div>
+            <div style={styles.brandName}>Breathing Safety</div>
+            <div style={styles.brandSub}>Gruppo CER</div>
+          </div>
+        </div>
+        {screen === "form" && (
+          <button
+            style={styles.iconBtn}
+            onClick={() => { resetForm(); setScreen("intro"); }}
+            aria-label="Chiudi"
+          >
+            <X size={20} />
+          </button>
+        )}
+      </header>
+
+      <main style={styles.main}>
+        {screen === "intro" && (
+          <Intro onStart={() => { resetForm(); setScreen("form"); }} />
+        )}
+        {screen === "form" && (
+          <Wizard
+            step={step} setStep={setStep}
+            data={data} set={set}
+            onSubmit={generate}
+            busy={busy}
+            pdfError={pdfError}
+          />
+        )}
+        {screen === "done" && (
+          <Done
+            result={result}
+            data={data}
+            onNew={() => { resetForm(); setScreen("form"); }}
+            onHome={() => setScreen("intro")}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────── Intro
+
+function Intro({ onStart }) {
+  return (
+    <div className="fade">
+      <div style={styles.introHero}>
+        <h1 style={styles.introTitle}>
+          Modulo di segnalazione anomalie
+        </h1>
+        <p style={styles.introLead}>
+          Compila il modulo guidato e invia la tua segnalazione agli uffici
+          che possono intervenire, con foto e posizione.
+        </p>
+        <button style={styles.cta} onClick={onStart}>
+          Nuova segnalazione <ChevronRight size={20} />
+        </button>
+      </div>
+
+      <div style={styles.introCards}>
+        {CATEGORIES.map((c) => {
+          const Icon = c.icon;
+          return (
+            <div key={c.id} style={{ ...styles.introCard, background: c.tint }}>
+              <Icon size={22} color={c.accent} />
+              <div style={styles.introCardLabel}>{c.label}</div>
+              <div style={styles.introCardDesc}>{c.desc}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={styles.privacyNote}>
+        I dati raccolti sono trattati dal titolare per la sola gestione delle
+        segnalazioni di sicurezza e logistica, ai sensi del Reg. UE 2016/679.
+        Non usare l'app per emergenze: in caso di pericolo immediato contatta i
+        soccorsi e il preposto.
+      </div>
+
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────── Wizard
+
+function Wizard({ step, setStep, data, set, onSubmit, busy, pdfError }) {
+  const cat = CATEGORIES.find((c) => c.id === data.category);
+
+  const canNext = () => {
+    if (step === 0) return !!data.category;
+    if (step === 1) return data.type && data.description.trim().length >= 5;
+    if (step === 2) return true; // foto/luogo opzionali
+    if (step === 3) return data.reporterName.trim() && data.reporterCompany.trim();
+    return true;
+  };
+
+  const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
+
+  return (
+    <div className="fade">
+      <Progress step={step} />
+
+      <div style={styles.stepArea}>
+        {step === 0 && <StepCategory data={data} set={set} />}
+        {step === 1 && <StepDetails data={data} set={set} cat={cat} />}
+        {step === 2 && <StepPhotoLocation data={data} set={set} />}
+        {step === 3 && <StepReporter data={data} set={set} />}
+        {step === 4 && <StepReview data={data} cat={cat} />}
+      </div>
+
+      <div style={styles.navBar}>
+        {step > 0 ? (
+          <button style={styles.ghostBtn} onClick={back}>
+            <ChevronLeft size={18} /> Indietro
+          </button>
+        ) : <span />}
+
+        {step < STEPS.length - 1 ? (
+          <button
+            style={{ ...styles.cta, opacity: canNext() ? 1 : 0.45, pointerEvents: canNext() ? "auto" : "none" }}
+            onClick={next}
+          >
+            Avanti <ChevronRight size={20} />
+          </button>
+        ) : (
+          <button
+            style={{ ...styles.cta, opacity: busy ? 0.6 : 1, pointerEvents: busy ? "none" : "auto" }}
+            onClick={onSubmit}
+          >
+            {busy ? "Genero il PDF…" : <>Genera PDF <FileText size={18} /></>}
+          </button>
+        )}
+      </div>
+      {pdfError && <div style={styles.errorBox}>{pdfError}</div>}
+    </div>
+  );
+}
+
+function Progress({ step }) {
+  return (
+    <div style={styles.progressWrap}>
+      <div style={styles.progressLabels}>
+        <span style={styles.progressStepName}>{STEPS[step]}</span>
+        <span style={styles.progressCount}>Passo {step + 1} di {STEPS.length}</span>
+      </div>
+      <div style={styles.progressTrack}>
+        <div style={{ ...styles.progressFill, width: `${((step + 1) / STEPS.length) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Step 0: categoria
+function StepCategory({ data, set }) {
+  return (
+    <div>
+      <h2 style={styles.stepTitle}>Di cosa si tratta?</h2>
+      <p style={styles.stepHint}>Scegli l'ambito della segnalazione.</p>
+      <div style={styles.catGrid}>
+        {CATEGORIES.map((c) => {
+          const Icon = c.icon;
+          const active = data.category === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => { set("category", c.id); set("type", ""); }}
+              style={{
+                ...styles.catCard,
+                borderColor: active ? c.accent : "#e4e9e6",
+                background: active ? c.tint : "#fff",
+                boxShadow: active ? `0 0 0 3px ${c.accent}22` : "none",
+              }}
+            >
+              <div style={{ ...styles.catIconWrap, background: c.tint }}>
+                <Icon size={24} color={c.accent} />
+              </div>
+              <div style={styles.catLabel}>{c.label}</div>
+              <div style={styles.catDesc}>{c.desc}</div>
+              <div style={{ ...styles.catRoute, color: c.accent }}>→ {c.office}</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 1: dettagli
+function StepDetails({ data, set, cat }) {
+  if (!cat) return null;
+  return (
+    <div>
+      <h2 style={styles.stepTitle}>Dettagli</h2>
+      <p style={styles.stepHint}>Descrivi il problema in modo chiaro.</p>
+
+      <label style={styles.fieldLabel}>Tipo</label>
+      <div style={styles.chipWrap}>
+        {cat.types.map((t) => (
+          <button
+            key={t}
+            onClick={() => set("type", t)}
+            style={{
+              ...styles.chip,
+              borderColor: data.type === t ? cat.accent : "#dce3e0",
+              background: data.type === t ? cat.tint : "#fff",
+              color: data.type === t ? cat.accent : "#3a463f",
+              fontWeight: data.type === t ? 600 : 500,
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <label style={styles.fieldLabel}>Descrizione</label>
+      <textarea
+        style={styles.textarea}
+        rows={4}
+        placeholder="Cosa hai visto? Dove? Quando? (es. bombola O2 con valvola danneggiata nel deposito di…)"
+        value={data.description}
+        onChange={(e) => set("description", e.target.value)}
+      />
+
+      <label style={styles.fieldLabel}>Urgenza</label>
+      <div style={styles.urgencyRow}>
+        {URGENCY.map((u) => {
+          const active = data.urgency === u.id;
+          return (
+            <button
+              key={u.id}
+              onClick={() => set("urgency", u.id)}
+              style={{
+                ...styles.urgencyBtn,
+                borderColor: active ? u.color : "#dce3e0",
+                background: active ? `${u.color}14` : "#fff",
+              }}
+            >
+              <span style={{ ...styles.urgencyDot, background: u.color }} />
+              <span style={{ ...styles.urgencyLabel, color: active ? u.color : "#3a463f" }}>{u.label}</span>
+              <span style={styles.urgencyHint}>{u.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step 2: foto e luogo
+function StepPhotoLocation({ data, set }) {
+  const fileRef = useRef(null);
+  const [locating, setLocating] = useState(false);
+
+  const onFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const img = new Image();
+      img.onload = () => {
+        set("photo", { name: f.name, url: dataUrl, dataUrl, w: img.width, h: img.height });
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(f);
+  };
+
+  const getLocation = () => {
+    setLocating(true);
+    if (!navigator.geolocation) { setLocating(false); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        set("location", {
+          lat: pos.coords.latitude.toFixed(5),
+          lng: pos.coords.longitude.toFixed(5),
+        });
+        setLocating(false);
+      },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  return (
+    <div>
+      <h2 style={styles.stepTitle}>Foto e luogo</h2>
+      <p style={styles.stepHint}>Facoltativi, ma aiutano molto chi interviene.</p>
+
+      <label style={styles.fieldLabel}>Foto</label>
+      {data.photo ? (
+        <div style={styles.photoPreview}>
+          <img src={data.photo.url} alt="Anteprima" style={styles.photoImg} />
+          <button style={styles.photoRemove} onClick={() => set("photo", null)}>
+            <X size={16} /> Rimuovi
+          </button>
+        </div>
+      ) : (
+        <button style={styles.uploadBox} onClick={() => fileRef.current?.click()}>
+          <Camera size={26} color={BRAND} />
+          <span style={styles.uploadLabel}>Scatta o carica una foto</span>
+        </button>
+      )}
+      <input
+        ref={fileRef} type="file" accept="image/*" capture="environment"
+        style={{ display: "none" }} onChange={onFile}
+      />
+
+      <label style={{ ...styles.fieldLabel, marginTop: 20 }}>Posizione</label>
+      {data.location ? (
+        <div style={styles.locChip}>
+          <MapPin size={16} color={BRAND} />
+          <span>{data.location.lat}, {data.location.lng}</span>
+          <button style={styles.locClear} onClick={() => set("location", null)}>
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <button style={styles.uploadBox} onClick={getLocation}>
+          <MapPin size={24} color={BRAND} />
+          <span style={styles.uploadLabel}>{locating ? "Rilevamento…" : "Usa la posizione attuale"}</span>
+        </button>
+      )}
+
+      <label style={{ ...styles.fieldLabel, marginTop: 20 }}>Sito / cantiere (opzionale)</label>
+      <input
+        style={styles.input}
+        placeholder="Es. Deposito Castelnovo di Sotto, cliente X…"
+        value={data.site}
+        onChange={(e) => set("site", e.target.value)}
+      />
+    </div>
+  );
+}
+
+// ── Step 3: chi segnala
+function StepReporter({ data, set }) {
+  return (
+    <div>
+      <h2 style={styles.stepTitle}>Chi segnala</h2>
+      <p style={styles.stepHint}>Serve per ricontattarti in caso di dubbi.</p>
+
+      <label style={styles.fieldLabel}>Nome e cognome *</label>
+      <input style={styles.input} placeholder="Mario Rossi"
+        value={data.reporterName} onChange={(e) => set("reporterName", e.target.value)} />
+
+      <label style={styles.fieldLabel}>Azienda / ditta *</label>
+      <input style={styles.input} placeholder="Ragione sociale"
+        value={data.reporterCompany} onChange={(e) => set("reporterCompany", e.target.value)} />
+
+      <label style={styles.fieldLabel}>Telefono (opzionale)</label>
+      <input style={styles.input} type="tel" placeholder="Per eventuale richiamo"
+        value={data.reporterPhone} onChange={(e) => set("reporterPhone", e.target.value)} />
+
+      <div style={styles.consentBox}>
+        Inviando la segnalazione dichiari di aver letto l'informativa privacy e
+        acconsenti al trattamento dei dati per la sua gestione.
+      </div>
+    </div>
+  );
+}
+
+// ── Step 4: riepilogo
+function StepReview({ data, cat }) {
+  const urg = URGENCY.find((u) => u.id === data.urgency);
+  const Row = ({ k, v }) => (
+    <div style={styles.reviewRow}>
+      <span style={styles.reviewKey}>{k}</span>
+      <span style={styles.reviewVal}>{v || "—"}</span>
+    </div>
+  );
+  return (
+    <div>
+      <h2 style={styles.stepTitle}>Controlla e invia</h2>
+      <p style={styles.stepHint}>Verifica i dati prima dell'invio.</p>
+
+      <div style={styles.reviewCard}>
+        <div style={{ ...styles.reviewBadge, background: cat?.tint, color: cat?.accent }}>
+          {cat?.label} · <span style={{ color: urg?.color }}>{urg?.label}</span>
+        </div>
+        <Row k="Tipo" v={data.type} />
+        <Row k="Descrizione" v={data.description} />
+        <Row k="Sito" v={data.site} />
+        <Row k="Posizione" v={data.location ? `${data.location.lat}, ${data.location.lng}` : null} />
+        <Row k="Foto" v={data.photo ? data.photo.name : null} />
+        <Row k="Segnalante" v={data.reporterName} />
+        <Row k="Azienda" v={data.reporterCompany} />
+        <Row k="Telefono" v={data.reporterPhone} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────── Done
+
+function Done({ result, data, onNew, onHome }) {
+  const [shared, setShared] = useState(false);
+  const [note, setNote] = useState(null);
+  if (!result) return null;
+
+  const file = new File([result.blob], result.filename, { type: "application/pdf" });
+  const cat = CATEGORIES.find((c) => c.id === data.category);
+  const canShareFile = typeof navigator !== "undefined" &&
+    navigator.canShare && navigator.canShare({ files: [file] });
+
+  const share = async () => {
+    try {
+      await navigator.share({
+        files: [file],
+        title: `Segnalazione ${result.protocol}`,
+        text: `Segnalazione ${result.protocol} — ${cat?.label || ""}. Inoltra a ${cat?.office || "ufficio competente"}.`,
+      });
+      setShared(true);
+    } catch (e) {
+      if (e?.name !== "AbortError") setNote("Condivisione annullata o non disponibile. Usa Scarica PDF.");
+    }
+  };
+
+  const download = () => {
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = result.filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setShared(true);
+  };
+
+  return (
+    <div className="fade" style={styles.doneWrap}>
+      <div style={styles.doneCircle}>
+        <Check size={40} color="#fff" strokeWidth={3} />
+      </div>
+      <h2 style={styles.doneTitle}>PDF pronto</h2>
+      <p style={styles.doneLead}>
+        La segnalazione è stata trasformata in un documento. Condividila via
+        WhatsApp con {cat ? <strong>{cat.office}</strong> : "l'ufficio competente"}, oppure salvala.
+      </p>
+
+      <div style={styles.protoBox}>
+        <span style={styles.protoLabel}>Numero protocollo</span>
+        <span style={styles.protoNum}>{result.protocol}</span>
+        <span style={styles.protoDate}>{fmtDate(new Date())}</span>
+      </div>
+
+      {canShareFile ? (
+        <button style={{ ...styles.cta, ...styles.waBtn }} onClick={share}>
+          <Share2 size={19} /> Condividi su WhatsApp
+        </button>
+      ) : (
+        <div style={styles.desktopHint}>
+          Su questo dispositivo la condivisione diretta non è disponibile.
+          Scarica il PDF e allegalo manualmente a WhatsApp.
+        </div>
+      )}
+
+      <button style={styles.ghostBtnDownload} onClick={download}>
+        <Download size={17} /> Scarica PDF
+      </button>
+
+      {note && <div style={styles.errorBox}>{note}</div>}
+
+      {shared && (
+        <div style={styles.sharedOk}>
+          <Check size={14} /> Ricordati di completare l'invio in WhatsApp.
+        </div>
+      )}
+
+      <div style={styles.doneDivider} />
+      <button style={styles.cta} onClick={onNew}>Nuova segnalazione</button>
+      <button style={styles.ghostBtnWide} onClick={onHome}>
+        <ArrowLeft size={16} /> Torna alla home
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────── stili
+
+const globalCss = `
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  input, textarea, button { font-family: inherit; }
+  textarea:focus, input:focus { outline: none; border-color: ${BRAND} !important; box-shadow: 0 0 0 3px ${BRAND}22; }
+  .fade { animation: fade .28s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .fade { animation: none; } }
+  button:focus-visible { outline: 2px solid ${BRAND}; outline-offset: 2px; }
+`;
+
+const styles = {
+  viewport: {
+    maxWidth: 460, margin: "0 auto", minHeight: "100vh",
+    background: "#f6f8f7", fontFamily: "'Inter', system-ui, sans-serif",
+    color: INK, display: "flex", flexDirection: "column",
+  },
+  offlineBar: {
+    background: "#2a3b34", color: "#cfe9dd",
+    fontSize: 12.5, padding: "7px 14px", display: "flex",
+    alignItems: "center", gap: 8, justifyContent: "center",
+  },
+  header: {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "14px 18px", background: "#fff", borderBottom: "1px solid #eaefec",
+    position: "sticky", top: 0, zIndex: 5,
+  },
+  brandRow: { display: "flex", alignItems: "center", gap: 11 },
+  logoMark: {
+    width: 38, height: 38, borderRadius: 11, background: BRAND,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    boxShadow: `0 4px 12px ${BRAND}44`,
+  },
+  logoBreath: {
+    width: 15, height: 15, borderRadius: "50%", background: "#fff",
+    boxShadow: `0 0 0 4px ${BRAND}, 0 0 0 6px #ffffff55`,
+  },
+  brandName: { fontWeight: 700, fontSize: 15.5, letterSpacing: "-0.01em" },
+  brandSub: { fontSize: 11.5, color: "#7d8a83", marginTop: 1 },
+  iconBtn: {
+    border: "none", background: "#f1f4f2", width: 38, height: 38,
+    borderRadius: 10, display: "flex", alignItems: "center",
+    justifyContent: "center", cursor: "pointer", color: "#54615a",
+  },
+  main: { flex: 1, padding: "20px 18px 40px" },
+
+  // intro
+  introHero: { padding: "8px 2px 4px" },
+  introEyebrow: {
+    display: "inline-block", fontSize: 12, fontWeight: 600, color: BRAND,
+    background: "#e8f5ef", padding: "5px 11px", borderRadius: 20, marginBottom: 16,
+  },
+  introTitle: { fontSize: 26, lineHeight: 1.22, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 12px" },
+  introLead: { fontSize: 15, lineHeight: 1.55, color: "#54615a", margin: "0 0 22px" },
+  introCards: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 },
+  introCard: { padding: "16px 14px", borderRadius: 16 },
+  introCardLabel: { fontWeight: 700, fontSize: 14.5, marginTop: 10 },
+  introCardDesc: { fontSize: 12.5, color: "#5a675f", marginTop: 4, lineHeight: 1.4 },
+  privacyNote: {
+    fontSize: 11.5, color: "#7d8a83", lineHeight: 1.5, marginTop: 24,
+    padding: "12px 14px", background: "#eef2f0", borderRadius: 12,
+  },
+
+  // cta / nav
+  cta: {
+    background: BRAND, color: "#fff", border: "none", borderRadius: 14,
+    padding: "14px 22px", fontSize: 15.5, fontWeight: 700, cursor: "pointer",
+    display: "inline-flex", alignItems: "center", gap: 8,
+    boxShadow: `0 6px 16px ${BRAND}40`, transition: "transform .1s",
+  },
+  ghostBtn: {
+    background: "#fff", color: "#54615a", border: "1px solid #e0e6e2",
+    borderRadius: 14, padding: "13px 18px", fontSize: 14.5, fontWeight: 600,
+    cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4,
+  },
+  ghostBtnWide: {
+    background: "transparent", color: "#7d8a83", border: "none",
+    padding: "12px", fontSize: 14, fontWeight: 600, cursor: "pointer",
+    display: "inline-flex", alignItems: "center", gap: 6, marginTop: 4,
+  },
+  navBar: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 26, gap: 12 },
+
+  // progress
+  progressWrap: { marginBottom: 22 },
+  progressLabels: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 },
+  progressStepName: { fontWeight: 700, fontSize: 16 },
+  progressCount: { fontSize: 12, color: "#8a968f" },
+  progressTrack: { height: 6, background: "#e6ebe8", borderRadius: 4, overflow: "hidden" },
+  progressFill: { height: "100%", background: BRAND, borderRadius: 4, transition: "width .3s ease" },
+
+  stepArea: { minHeight: 320 },
+  stepTitle: { fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" },
+  stepHint: { fontSize: 13.5, color: "#7d8a83", margin: "0 0 18px" },
+
+  // categoria
+  catGrid: { display: "flex", flexDirection: "column", gap: 12 },
+  catCard: {
+    textAlign: "left", border: "2px solid #e4e9e6", borderRadius: 16,
+    padding: "16px 16px", cursor: "pointer", transition: "all .15s",
+  },
+  catIconWrap: { width: 46, height: 46, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  catLabel: { fontWeight: 700, fontSize: 16.5 },
+  catDesc: { fontSize: 13, color: "#5a675f", marginTop: 3 },
+  catRoute: { fontSize: 12, fontWeight: 600, marginTop: 10 },
+
+  // dettagli
+  fieldLabel: { display: "block", fontSize: 13, fontWeight: 700, color: "#3a463f", marginBottom: 8, marginTop: 4 },
+  chipWrap: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 },
+  chip: {
+    border: "1.5px solid #dce3e0", borderRadius: 10, padding: "9px 13px",
+    fontSize: 13, cursor: "pointer", transition: "all .12s",
+  },
+  textarea: {
+    width: "100%", border: "1.5px solid #dce3e0", borderRadius: 12,
+    padding: "12px 14px", fontSize: 14.5, resize: "vertical",
+    marginBottom: 20, lineHeight: 1.5, background: "#fff",
+  },
+  input: {
+    width: "100%", border: "1.5px solid #dce3e0", borderRadius: 12,
+    padding: "13px 14px", fontSize: 14.5, marginBottom: 16, background: "#fff",
+  },
+  urgencyRow: { display: "flex", gap: 8 },
+  urgencyBtn: {
+    flex: 1, border: "1.5px solid #dce3e0", borderRadius: 12, padding: "12px 8px",
+    cursor: "pointer", display: "flex", flexDirection: "column",
+    alignItems: "center", gap: 4, transition: "all .12s",
+  },
+  urgencyDot: { width: 10, height: 10, borderRadius: "50%" },
+  urgencyLabel: { fontWeight: 700, fontSize: 13.5 },
+  urgencyHint: { fontSize: 10.5, color: "#8a968f", textAlign: "center", lineHeight: 1.3 },
+
+  // foto/luogo
+  uploadBox: {
+    width: "100%", border: "2px dashed #c8d4ce", borderRadius: 14,
+    padding: "22px 16px", background: "#fff", cursor: "pointer",
+    display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+  },
+  uploadLabel: { fontSize: 14, fontWeight: 600, color: "#54615a" },
+  photoPreview: { position: "relative", borderRadius: 14, overflow: "hidden" },
+  photoImg: { width: "100%", maxHeight: 220, objectFit: "cover", display: "block" },
+  photoRemove: {
+    position: "absolute", top: 10, right: 10, background: "rgba(15,28,23,.8)",
+    color: "#fff", border: "none", borderRadius: 8, padding: "7px 11px",
+    fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+    display: "inline-flex", alignItems: "center", gap: 5,
+  },
+  locChip: {
+    display: "inline-flex", alignItems: "center", gap: 8, background: "#e8f5ef",
+    border: `1.5px solid ${BRAND}`, borderRadius: 12, padding: "12px 14px",
+    fontSize: 14, fontWeight: 600, color: BRAND_DARK,
+  },
+  locClear: { border: "none", background: "transparent", cursor: "pointer", color: BRAND_DARK, display: "flex", padding: 0 },
+
+  // riepilogo
+  consentBox: { fontSize: 12, color: "#7d8a83", lineHeight: 1.5, marginTop: 8, padding: "12px 14px", background: "#eef2f0", borderRadius: 12 },
+  reviewCard: { background: "#fff", borderRadius: 16, border: "1px solid #eaefec", padding: "4px 16px" },
+  reviewBadge: { display: "inline-block", fontSize: 12.5, fontWeight: 700, padding: "6px 12px", borderRadius: 20, margin: "14px 0 6px" },
+  reviewRow: { display: "flex", gap: 12, padding: "11px 0", borderBottom: "1px solid #f0f3f1" },
+  reviewKey: { fontSize: 12.5, color: "#8a968f", fontWeight: 600, minWidth: 92, flexShrink: 0 },
+  reviewVal: { fontSize: 13.5, color: INK, lineHeight: 1.45 },
+
+  // done
+  doneWrap: { textAlign: "center", paddingTop: 30, display: "flex", flexDirection: "column", alignItems: "center" },
+  doneCircle: {
+    width: 84, height: 84, borderRadius: "50%", background: BRAND,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    boxShadow: `0 10px 30px ${BRAND}55`, marginBottom: 22,
+  },
+  doneTitle: { fontSize: 23, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 8px" },
+  doneLead: { fontSize: 14.5, color: "#54615a", lineHeight: 1.5, maxWidth: 320, margin: "0 0 24px" },
+  protoBox: {
+    background: "#fff", border: "1px solid #eaefec", borderRadius: 16,
+    padding: "18px 28px", marginBottom: 26, display: "flex", flexDirection: "column", gap: 3,
+  },
+  protoLabel: { fontSize: 11.5, color: "#8a968f", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" },
+  protoNum: { fontSize: 26, fontWeight: 800, color: BRAND_DARK, letterSpacing: "0.02em" },
+  protoDate: { fontSize: 12, color: "#8a968f" },
+
+  waBtn: { background: "#25D366", boxShadow: "0 6px 16px #25D36644", width: "100%", justifyContent: "center", marginBottom: 10 },
+  ghostBtnDownload: {
+    background: "#fff", color: "#54615a", border: "1px solid #e0e6e2",
+    borderRadius: 14, padding: "13px 18px", fontSize: 14.5, fontWeight: 600,
+    cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7,
+    width: "100%", justifyContent: "center",
+  },
+  desktopHint: {
+    fontSize: 13, color: "#54615a", lineHeight: 1.5, background: "#eef2f0",
+    borderRadius: 12, padding: "12px 14px", marginBottom: 10, textAlign: "left",
+  },
+  sharedOk: {
+    marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6,
+    fontSize: 12.5, color: BRAND_DARK, background: "#e8f5ef",
+    padding: "8px 13px", borderRadius: 20,
+  },
+  errorBox: {
+    marginTop: 12, fontSize: 13, color: "#b23c28", background: "#fbecea",
+    border: "1px solid #f3cfc9", borderRadius: 12, padding: "11px 14px", lineHeight: 1.45,
+  },
+  doneDivider: { height: 1, background: "#eaefec", width: "100%", margin: "24px 0 20px" },
+};
+
+const rootEl = document.getElementById("root");
+ReactDOM.createRoot(rootEl).render(<App />);
+
+// Registrazione service worker per funzionamento offline / installabilità
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+  </script>
+</body>
+</html>
